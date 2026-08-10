@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link collaborator – OminiNote</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 560px; margin: 80px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; text-align: center; }
+    h1 { font-size: 1.75rem; margin-bottom: 8px; }
+    p { color: #444; }
+    a.btn { display: inline-block; margin: 8px 6px; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+    a.primary { background: #1a1a1a; color: #fff; }
+    a.secondary { border: 1px solid #ccc; color: #1a1a1a; }
+    .muted { color: #888; font-size: 0.9rem; margin-top: 2rem; }
+    #link-preview { display: none; }
+  </style>
+</head>
+<body>
+  <h1 id="dl-title">Link collaborator</h1>
+  <p id="dl-desc">Launching OminiNote…</p>
+  <p>
+    <a id="open-app" class="btn primary" href="#">Open in OminiNote</a>
+    <a class="btn secondary" href="https://github.com/RavinduRepo/OminiNote/releases">Download app</a>
+  </p>
+  <p class="muted"><a href="/">omininote.com</a></p>
+  <code id="link-preview"></code>
+  <script src="/deeplink.js"></script>
+</body>
+</html>
