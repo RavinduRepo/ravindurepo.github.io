@@ -3,8 +3,7 @@
  *
  * Public URLs look like:
  *   https://omininote.com/import?id=…
- *   https://omininote.com/collab?id=…
- *   https://omininote.com/collab-peer?nb=…&index=…
+ *   https://omininote.com/collab?folderId=…&nbId=…
  *   https://omininote.com/link/n/…
  *
  * The custom-scheme fallback (omninote://…) is what the OS already registers.
@@ -39,7 +38,6 @@
     return (
       kind === 'import' ||
       kind === 'collab' ||
-      kind === 'collab-peer' ||
       kind === 'link'
     );
   }
@@ -93,7 +91,7 @@
       title.textContent =
         kind === 'import'
           ? 'Open shared note'
-          : kind === 'collab' || kind === 'collab-peer'
+          : kind === 'collab'
             ? 'Open collaboration invite'
             : 'Open in OminiNote';
     }
@@ -112,3 +110,4 @@
     run();
   }
 })();
+
