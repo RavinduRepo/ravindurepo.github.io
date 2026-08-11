@@ -396,6 +396,10 @@ async function join(res, body) {
     memberId: id,
     memberSecret,
     role,
+    // Did the owner actually name this address (or has it joined before)? The
+    // client asks the user which account to use only when this is false — i.e.
+    // when the pick was a fallback rather than the owner's instruction.
+    matchedInvite: Boolean(invited || prev),
   });
 }
 
