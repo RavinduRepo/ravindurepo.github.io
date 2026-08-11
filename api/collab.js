@@ -316,7 +316,25 @@ async function join(res, body) {
     return json(res, 403, { ok: false, error: 'forbidden' });
   }
 
-  const email = cleanEmail(body.email);
+  // The client offers every account connected on its device, because only this
+  // side knows which one the owner invited. Prefer an address that has a
+  // recorded invite (or is already a member); fall back to the first offered.
+  // Guessing on the client joined multi-account devices under the wrong Gmail.
+  const offered = [
+    cleanEmail(body.email),
+    ...(Array.isArray(body.emails) ? body.emails.slice(0, 10) : []).map(
+      cleanEmail,
+    ),
+  ].filter(Boolean);
+  const email =
+    offered.find(
+      (e) =>
+        (share.invites && share.invites[e]) ||
+        (share.members && share.members[`e:${e}`]),
+    ) ||
+    offered[0] ||
+    null;
+
   const deviceId = str(body.deviceId, 80);
   if (!email && !deviceId) {
     return json(res, 400, { ok: false, error: 'missing_identity' });
