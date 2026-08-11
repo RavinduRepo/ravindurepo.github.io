@@ -3,35 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Open invite – OminiNote</title>
-  <meta name="description" content="Open a collaboration invite in OminiNote.">
+  <title>Open shared notebook – OminiNote</title>
+  <meta name="description" content="Open a shared OminiNote notebook.">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 560px; margin: 80px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; text-align: center; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 560px; margin: 72px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; text-align: center; }
     h1 { font-size: 1.75rem; margin-bottom: 8px; }
     p { color: #444; }
     a.btn { display: inline-block; margin: 8px 6px; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; }
     a.primary { background: #1a1a1a; color: #fff; }
     a.secondary { border: 1px solid #ccc; color: #1a1a1a; }
+    .note { background: #f6f6f6; border-radius: 10px; padding: 14px 18px; margin: 1.5rem 0; font-size: 0.95rem; color: #333; text-align: left; }
     .muted { color: #888; font-size: 0.9rem; margin-top: 2rem; }
-    .steps { text-align: left; background: #f6f6f6; border-radius: 10px; padding: 14px 18px; margin: 1.25rem 0; font-size: 0.95rem; color: #333; }
-    .steps li { margin: 0.35rem 0; }
+    #nb-name { font-weight: 600; }
     #link-preview { display: none; }
   </style>
 </head>
 <body>
-  <h1 id="dl-title">Open collaboration invite</h1>
+  <h1 id="dl-title">Open shared notebook</h1>
   <p id="dl-desc">Launching OminiNote…</p>
-  <ol class="steps">
-    <li>Install OminiNote if you don’t have it</li>
-    <li>Sign in with the Google account you were invited with</li>
-    <li>Tap <strong>Open in OminiNote</strong> below</li>
-  </ol>
+
   <p>
     <a id="open-app" class="btn primary" href="#">Open in OminiNote</a>
-    <a class="btn secondary" href="https://github.com/RavinduRepo/OminiNote/releases">Download app</a>
+    <a class="btn secondary" href="https://github.com/RavinduRepo/OminiNote/releases">Get the app</a>
   </p>
-  <p class="muted"><a href="/">omininote.com</a> · <a href="/privacy">Privacy</a></p>
+
+  <div class="note">
+    <p style="margin:0">
+      Tapping <strong>Open in OminiNote</strong> downloads the notebook and keeps
+      it up to date. You don’t need to sign in to read it — signing in only
+      matters if the owner gave you edit access, so your changes can travel back.
+    </p>
+  </div>
+
+  <p class="muted">
+    Don’t recognise this? You can close this page — nothing is downloaded until
+    you open the app.
+    <br><a href="/">omininote.com</a> · <a href="/privacy">Privacy</a>
+  </p>
   <code id="link-preview"></code>
+
+  <script>
+    // Show the notebook name from the invite (?n=) before handing off, so the
+    // page says what you are about to open instead of "an invite".
+    (function () {
+      try {
+        var name = new URLSearchParams(location.search).get('n');
+        if (name) {
+          document.getElementById('dl-desc').innerHTML =
+            'Opening <span id="nb-name"></span> in OminiNote…';
+          document.getElementById('nb-name').textContent = name;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script src="/deeplink.js"></script>
 </body>
 </html>
