@@ -17,11 +17,19 @@ called with plain `fetch`. The repo stays a static site with no build step.
 ## Setup
 
 1. Import this repo into Vercel (Add New → Project → pick the repo → Deploy).
-2. In the project: **Storage → Create Database → Redis (Upstash)** → connect it.
-   Vercel injects `KV_REST_API_URL` / `KV_REST_API_TOKEN` automatically.
-3. **Redeploy once** so the function picks up those variables.
-4. Point `omininote.com` at the project (Settings → Domains).
-5. Build the app with `COLLAB_RELAY_URL=https://omininote.com/api/collab`.
+2. Create a **free** Redis at [upstash.com](https://upstash.com) — sign up with
+   GitHub, **no credit card**, 500K commands/month and 256 MB. Copy its two
+   **REST** values (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`).
+
+   Signing up at Upstash directly is deliberate: Vercel's Marketplace flow can
+   ask for a payment method before it will provision anything, even on a free
+   plan. Going direct avoids that and uses the same free tier.
+3. In Vercel: **Settings → Environment Variables** → add those two names and
+   values (all environments).
+4. **Redeploy once** — a function only sees variables that existed when it was
+   built.
+5. Point `omininote.com` at the project (Settings → Domains).
+6. Build the app with `COLLAB_RELAY_URL=https://omininote.com/api/collab`.
 
 Check it with:
 
@@ -60,10 +68,13 @@ recorded invite for that email, else the share default.
 ## Traffic
 
 Joining is a write. Everything routine is a **read** — the client asks who is in
-a share at most once a minute, however fast it syncs notes. A member writes a
-heartbeat only when its published channel id changes or every 30 minutes. So a
-participant costs roughly one write to join plus a few dozen a day while
-actively using the app.
+a share at most once a minute for the notebook it has open, and once every five
+minutes for the rest, however fast it syncs notes. A member writes a heartbeat
+only when its published channel id changes or every 30 minutes.
+
+So one person actively using the app all day is on the order of a few thousand
+Redis commands, against a free allowance of 500,000 per month. The free tier is
+not a stopgap here — it is comfortably more than this service needs.
 
 ## What a stolen database dump would reveal
 
