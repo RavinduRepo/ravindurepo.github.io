@@ -1,7 +1,7 @@
-# OminiNote collaboration relay (Vercel)
+# OminiNote collaboration relay
 
-`collab/[...path].js` is a serverless function served at
-`https://omininote.com/api/collab/*`. It stores **only** the collaboration
+`api/collab.js` is a single Vercel serverless function served at
+`https://omininote.com/api/collab`. It stores **only** the collaboration
 handshake: who joined a share, their role, the Drive file id of their published
 channel, and when they were last seen.
 
@@ -11,48 +11,65 @@ exists for one reason: under the `drive.file` OAuth scope, a guest's app cannot
 see a file the owner shared with them and cannot write anything into the owner's
 Drive — so Drive has no way to carry "I joined, here is my channel id".
 
-It has **no npm dependencies**: storage is Upstash Redis over its REST API,
-called with plain `fetch`. The repo stays a static site with no build step.
+No npm dependencies: storage is Upstash Redis over its REST API, called with
+Node's built-in `fetch`.
 
 ## Setup
 
 1. Import this repo into Vercel (Add New → Project → pick the repo → Deploy).
 2. Create a **free** Redis at [upstash.com](https://upstash.com) — sign up with
    GitHub, **no credit card**, 500K commands/month and 256 MB. Copy its two
-   **REST** values (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`).
+   **REST** values.
 
    Signing up at Upstash directly is deliberate: Vercel's Marketplace flow can
    ask for a payment method before it will provision anything, even on a free
    plan. Going direct avoids that and uses the same free tier.
-3. In Vercel: **Settings → Environment Variables** → add those two names and
-   values (all environments).
+3. In Vercel: **Settings → Environment Variables** → add
+   `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (all environments).
 4. **Redeploy once** — a function only sees variables that existed when it was
    built.
 5. Point `omininote.com` at the project (Settings → Domains).
 6. Build the app with `COLLAB_RELAY_URL=https://omininote.com/api/collab`.
 
-Check it with:
+Check it by opening `https://omininote.com/api/collab` in a browser:
 
-```bash
-curl https://omininote.com/api/collab/v1/health
+```json
+{ "ok": true, "service": "omininote-collab", "v": 1 }
 ```
 
-`{"ok":true,...}` means it is live. A 500 mentioning Redis credentials means
-step 2 or 3 was missed.
+A 500 mentioning `no_redis_credentials` means step 3 or 4 was missed. A **404**
+means Vercel is not building the function at all — see the note below.
 
-## API
+## Why it is one flat endpoint
 
-| Method | Path | Who | Purpose |
-|---|---|---|---|
-| `GET` | `/v1/health` | anyone | liveness |
-| `POST` | `/v1/share` | owner | create share / refresh published channel id |
-| `POST` | `/v1/invite` | owner | record "this email is invited as reader\|writer" |
-| `POST` | `/v1/join` | guest | join with the link's `joinKey`; returns `memberSecret` + assigned role |
-| `GET` | `/v1/roster?shareId=&secret=&memberId=` | member/owner | list members + their channel ids |
-| `POST` | `/v1/heartbeat` | member | refresh `lastSeenAt`, publish channel id |
-| `POST` | `/v1/member` | owner | change a member's role, or remove them |
-| `POST` | `/v1/leave` | member | remove yourself |
-| `POST` | `/v1/close` | owner | delete the share record |
+The first version used `api/collab/[...path].js` with REST paths like
+`/api/collab/v1/join`. Vercel decided the whole `api` folder was **static
+content**: it happily served `api/README.md` as a web page while every endpoint
+returned 404. Two things prevent that recurring, and both matter:
+
+- **`package.json`** at the repo root, so Vercel treats this as a Node project
+  and compiles `api/*.js` as Serverless Functions rather than serving them.
+- **`vercel.json`** naming `api/collab.js` under `functions` explicitly.
+
+And the function itself is now one file with no dynamic route segment — the
+operation travels in an `action` field. There is no routing left to misread.
+
+## Actions
+
+Every request is `POST https://omininote.com/api/collab` with a JSON body whose
+`action` field selects the operation. A plain `GET` returns the health payload.
+
+| Action | Who | Purpose |
+|---|---|---|
+| `health` | anyone | liveness (also the bare `GET`) |
+| `share` | owner | create share / refresh published channel id |
+| `invite` | owner | record "this email is invited as reader\|writer" |
+| `join` | guest | join with the link's `joinKey`; returns `memberSecret` + assigned role |
+| `roster` | member/owner | list members + their channel ids |
+| `heartbeat` | member | refresh `lastSeenAt`, publish channel id |
+| `member` | owner | change a member's role, or remove them |
+| `leave` | member | remove yourself |
+| `close` | owner | delete the share record |
 
 ### Capability secrets
 

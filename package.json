@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "name": "omininote-site",
+  "version": "1.0.0",
+  "description": "omininote.com — static site plus the collaboration relay function in api/. No dependencies and no build step; this file exists so Vercel treats the repo as a Node project and compiles api/collab.js as a Serverless Function instead of serving it as a static file.",
+  "license": "UNLICENSED"
+}
