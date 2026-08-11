@@ -198,6 +198,19 @@ const str = (v, max = 200) =>
 const memberIdOf = ({ email, deviceId }) =>
   email ? `e:${email}` : `d:${String(deviceId || '').slice(0, 80)}`;
 
+/**
+ * Does [secret] authenticate as [m]? Accepts any of the member's per-device
+ * secrets, and the legacy single hash written before per-device secrets existed.
+ */
+function memberSecretOk(m, hash) {
+  if (!m) return false;
+  if (m.memberSecretHash && hashEquals(m.memberSecretHash, hash)) return true;
+  for (const stored of Object.values(m.secrets || {})) {
+    if (hashEquals(stored, hash)) return true;
+  }
+  return false;
+}
+
 /** Public view of a member — no secrets ever leave this function. */
 const publicMember = (id, m) => ({
   id,
@@ -357,6 +370,12 @@ async function join(res, body) {
 
   const memberSecret = randomUUID().replace(/-/g, '');
   const now = Date.now();
+  // One secret **per device**, not one per member. A person may use the same
+  // Google account on a phone and a tablet; with a single hash, the second
+  // device's join overwrote the first's secret, the first's next roster read
+  // came back 403, and it silently dropped a working share.
+  const secrets = { ...((prev && prev.secrets) || {}) };
+  secrets[deviceId || 'default'] = sha256(memberSecret);
   share.members[id] = {
     email,
     deviceId,
@@ -368,7 +387,7 @@ async function join(res, body) {
         : null,
     joinedAt: (prev && prev.joinedAt) || now,
     lastSeenAt: now,
-    memberSecretHash: sha256(memberSecret),
+    secrets,
   };
 
   await saveShare(share.shareId, share);
@@ -390,9 +409,11 @@ async function roster(res, body) {
     return json(res, 200, rosterPayload(share));
   }
   const m = share.members && share.members[str(body.memberId, 160) || ''];
-  if (!m || !hashEquals(m.memberSecretHash, hash)) {
-    // A member the owner removed lands here — the client turns this into
-    // "the owner removed your access" rather than an empty list.
+  // Two different situations, and the client must not confuse them: the member
+  // is gone (the owner removed them → drop the local binding) versus the secret
+  // does not match (stale or wrong → a plumbing problem, keep the share).
+  if (!m) return json(res, 403, { ok: false, error: 'revoked' });
+  if (!memberSecretOk(m, hash)) {
     return json(res, 403, { ok: false, error: 'forbidden' });
   }
   return json(res, 200, rosterPayload(share));
@@ -405,7 +426,7 @@ async function heartbeat(res, body) {
 
   const m = share.members && share.members[str(body.memberId, 160) || ''];
   if (!m) return json(res, 403, { ok: false, error: 'forbidden' });
-  if (!hashEquals(m.memberSecretHash, sha256(body.memberSecret))) {
+  if (!memberSecretOk(m, sha256(body.memberSecret))) {
     return json(res, 403, { ok: false, error: 'forbidden' });
   }
 
@@ -455,7 +476,7 @@ async function leaveSelf(res, body) {
   const memberId = str(body.memberId, 160) || '';
   const m = share.members && share.members[memberId];
   if (!m) return json(res, 200, { ok: true });
-  if (!hashEquals(m.memberSecretHash, sha256(body.memberSecret))) {
+  if (!memberSecretOk(m, sha256(body.memberSecret))) {
     return json(res, 403, { ok: false, error: 'forbidden' });
   }
 
