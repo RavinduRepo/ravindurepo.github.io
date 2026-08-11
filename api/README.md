@@ -72,9 +72,13 @@ a share at most once a minute for the notebook it has open, and once every five
 minutes for the rest, however fast it syncs notes. A member writes a heartbeat
 only when its published channel id changes or every 30 minutes.
 
-So one person actively using the app all day is on the order of a few thousand
-Redis commands, against a free allowance of 500,000 per month. The free tier is
-not a stopgap here — it is comfortably more than this service needs.
+One person with a shared notebook open all day is on the order of 1,500 Redis
+commands; a typical collaborating user is a few hundred.
+
+**The 500K/month allowance is shared by every OminiNote user**, not per person —
+this is one database for the whole app. That works out to roughly 30–80 actively
+collaborating users on the free tier. Past that, Upstash is pay-as-you-go per
+command, so it grows gradually rather than hitting a wall.
 
 ## What a stolen database dump would reveal
 
